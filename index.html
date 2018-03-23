@@ -17,7 +17,7 @@
                 mouseX         = undefined, 
                 mouseY         = undefined,
                 maze           = undefined, 
-                mazeMesh       = undefined,
+                mazeMeshes     = undefined,
                 mazeDimension  = 11,
                 planeMesh      = undefined,
                 ballMesh       = undefined,
@@ -26,6 +26,7 @@
                 ironTexture    = THREE.ImageUtils.loadTexture('/ball.png'),
                 planeTexture   = THREE.ImageUtils.loadTexture('/concrete.png'),
                 brickTexture   = THREE.ImageUtils.loadTexture('/brick.png'),
+                mossbrickTexture = THREE.ImageUtils.loadTexture('/crackbrick.png'),
                 gameState      = undefined,
 
             // Box2D shortcuts
@@ -76,22 +77,33 @@
             
             
             function generate_maze_mesh(field) {
-                var dummy = new THREE.Geometry();
+                var bricks = new THREE.Geometry();
+                var mossyBricks = new THREE.Geometry();
                 for (var i = 0; i < field.dimension; i++) {
                     for (var j = 0; j < field.dimension; j++) {
                         if (field[i][j]) {
-                            var geometry = new THREE.CubeGeometry(1,1,1,1,1,1);
+                            var bRegularBrick = (Math.random() * 10 >= 2);
+                            var height = (bRegularBrick) ? 1 : 1.1;
+                            var geometry = new THREE.CubeGeometry(1,1,height,1,1,1);
                             var mesh_ij = new THREE.Mesh(geometry);
                             mesh_ij.position.x = i;
                             mesh_ij.position.y = j;
                             mesh_ij.position.z = 0.5;
-                            THREE.GeometryUtils.merge(dummy, mesh_ij);
+                            if ( bRegularBrick ) {
+                                THREE.GeometryUtils.merge(bricks, mesh_ij);
+                            }
+                            else {
+                                THREE.GeometryUtils.merge(mossyBricks, mesh_ij);
+                            }
                         }
                     }
                 }
-                var material = new THREE.MeshPhongMaterial({map: brickTexture});
-                var mesh = new THREE.Mesh(dummy, material)
-                return mesh;
+                var mazeMesh = [];
+                var brickMaterial = new THREE.MeshPhongMaterial({map: brickTexture});
+                mazeMesh.push(new THREE.Mesh(bricks, brickMaterial));
+                var mossyMaterial = new THREE.MeshPhongMaterial({map: mossbrickTexture});
+                mazeMesh.push(new THREE.Mesh(mossyBricks, mossyMaterial));
+                return mazeMesh;
             }
 
 
@@ -119,8 +131,9 @@
                 scene.add(camera);
 
                 // Add the maze.
-                mazeMesh = generate_maze_mesh(maze);
-                scene.add(mazeMesh);
+                mazeMeshes = generate_maze_mesh(maze);
+                scene.add(mazeMeshes[0]);
+                scene.add(mazeMeshes[1]);
 
                 // Add the ground.
                 g = new THREE.PlaneGeometry(mazeDimension*10, mazeDimension*10, mazeDimension, mazeDimension);
